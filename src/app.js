@@ -79,16 +79,16 @@ function drawMarkdown(ctx, markdown, startY, fontSize, lineHeight) {
   }
 }
 
-app.post("/generate-image/:imageName?", async (req, res) => {
+app.post("/generate-image", async (req, res) => {
   try {
     const {
       titleMarkdown,
       descriptionMarkdown,
       imagePath: bodyImagePath,
+      imageName,
     } = req.body;
-    const { imageName } = req.params;
 
-    // Prioridad: parámetro de ruta `imageName` > `imagePath` en body > imagen por defecto
+    // Prioridad: `imageName` en body > `imagePath` en body > imagen por defecto
     let imagePath = bodyImagePath || "./images/novedades.png";
     if (imageName) {
       imagePath = path.join("./images", imageName);
