@@ -1,8 +1,10 @@
 import bodyParser from "body-parser";
-import { createCanvas, loadImage } from "canvas";
+import { createCanvas, loadImage, registerFont } from "canvas";
 import express from "express";
+import fs from "fs";
 import { marked } from "marked";
 import path from "path";
+import { fileURLToPath } from "url";
 
 const app = express();
 app.use(bodyParser.json({ limit: "10mb" }));
@@ -12,6 +14,33 @@ const HEIGHT = 1350;
 const PADDING_X = 80;
 const TITLE_Y = 160;
 const DESCRIPTION_Y = 420;
+
+// Resolve __dirname in ES module
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Try to register a local/system font that supports accents/UTF-8.
+// If none found, fallback to generic Sans (may produce missing glyphs).
+let FONT_FAMILY = "Sans";
+const possibleFonts = [
+  path.join(__dirname, "fonts", "NotoSans-Regular.ttf"),
+  path.join(__dirname, "fonts", "DejaVuSans.ttf"),
+  "/Library/Fonts/Arial Unicode.ttf",
+  "/Library/Fonts/Arial.ttf",
+];
+
+for (const fp of possibleFonts) {
+  try {
+    if (fs.existsSync(fp)) {
+      registerFont(fp, { family: "AppFont" });
+      FONT_FAMILY = "AppFont";
+      console.log(`Registered font: ${fp}`);
+      break;
+    }
+  } catch (err) {
+    console.warn(`Font check/register failed for ${fp}: ${err.message}`);
+  }
+}
 
 function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
   const words = text.split(" ");
@@ -36,7 +65,7 @@ function drawMarkdown(ctx, markdown, startY, fontSize, lineHeight) {
 
   for (const token of tokens) {
     if (token.type === "heading") {
-      ctx.font = `bold ${fontSize}px Sans`;
+      ctx.font = `bold ${fontSize}px "${FONT_FAMILY}"`;
       wrapText(
         ctx,
         token.text,
@@ -49,7 +78,7 @@ function drawMarkdown(ctx, markdown, startY, fontSize, lineHeight) {
     }
 
     if (token.type === "paragraph") {
-      ctx.font = `${fontSize - 20}px Sans`;
+      ctx.font = `${fontSize - 20}px "${FONT_FAMILY}"`;
       wrapText(
         ctx,
         token.text,
@@ -62,7 +91,7 @@ function drawMarkdown(ctx, markdown, startY, fontSize, lineHeight) {
     }
 
     if (token.type === "list") {
-      ctx.font = `${fontSize - 20}px Sans`;
+      ctx.font = `${fontSize - 20}px "${FONT_FAMILY}"`;
       for (const item of token.items) {
         wrapText(
           ctx,
