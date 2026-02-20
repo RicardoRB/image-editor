@@ -1,6 +1,7 @@
 {
   "name": "ffmpeg-editor-api",
   "version": "1.0.0",
+  "type": "module",
   "description": "API Node.js para procesar y transformar medios usando FFmpeg localmente.",
   "main": "src/app.js",
   "scripts": {
