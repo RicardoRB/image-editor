@@ -1,8 +1,19 @@
 # syntax=docker/dockerfile:1
 FROM node:20-alpine
 
-# instalar ffmpeg y herramientas de compilación (si no necesitas build tools puedes quitar build-base python3)
-RUN apk add --no-cache ffmpeg curl build-base python3
+# instalar ffmpeg, fontconfig, fuentes y dependencias para node-canvas
+# incluye ttf-dejavu como fuente de fallback y fontconfig para evitar errores
+RUN apk add --no-cache \
+	ffmpeg \
+	curl \
+	build-base \
+	python3 \
+	cairo-dev \
+	pango-dev \
+	libjpeg-turbo-dev \
+	giflib-dev \
+	fontconfig \
+	ttf-dejavu
 
 WORKDIR /app
 
@@ -16,4 +27,5 @@ RUN npm install --omit=dev
 COPY . .
 
 EXPOSE 3000
+ENV FONTCONFIG_PATH=/etc/fonts
 CMD ["node", "src/app.js"]

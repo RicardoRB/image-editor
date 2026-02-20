@@ -1,10 +1,32 @@
 import bodyParser from "body-parser";
-import { createCanvas, loadImage, registerFont } from "canvas";
 import express from "express";
 import fs from "fs";
 import { marked } from "marked";
 import path from "path";
 import { fileURLToPath } from "url";
+
+// Try to set FONTCONFIG_PATH from common Homebrew/system locations before
+// loading the `canvas` native bindings which rely on fontconfig.
+const fontconfigDirs = [
+  "/opt/homebrew/etc/fonts",
+  "/usr/local/etc/fonts",
+  "/etc/fonts",
+];
+
+for (const d of fontconfigDirs) {
+  try {
+    if (fs.existsSync(d)) {
+      process.env.FONTCONFIG_PATH = d;
+      console.log(`Set FONTCONFIG_PATH=${d}`);
+      break;
+    }
+  } catch (e) {
+    // ignore
+  }
+}
+
+// Dynamically import canvas after ensuring FONTCONFIG_PATH is set.
+const { createCanvas, loadImage, registerFont } = await import("canvas");
 
 const app = express();
 app.use(bodyParser.json({ limit: "10mb" }));
@@ -32,13 +54,17 @@ const possibleFonts = [
 for (const fp of possibleFonts) {
   try {
     if (fs.existsSync(fp)) {
-      registerFont(fp, { family: "AppFont" });
-      FONT_FAMILY = "AppFont";
-      console.log(`Registered font: ${fp}`);
-      break;
+      try {
+        registerFont(fp, { family: "AppFont" });
+        FONT_FAMILY = "AppFont";
+        console.log(`Registered font: ${fp}`);
+        break;
+      } catch (err) {
+        console.warn(`registerFont failed for ${fp}: ${err.message}`);
+      }
     }
   } catch (err) {
-    console.warn(`Font check/register failed for ${fp}: ${err.message}`);
+    console.warn(`Font check failed for ${fp}: ${err.message}`);
   }
 }
 
