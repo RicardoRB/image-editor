@@ -15,6 +15,15 @@ RUN apk add --no-cache \
 	fontconfig \
 	ttf-dejavu
 
+# Ensure fontconfig config exists
+RUN mkdir -p /etc/fonts && \
+	if [ ! -f /etc/fonts/fonts.conf ]; then \
+		echo '<?xml version="1.0"?><!DOCTYPE fontconfig SYSTEM "fonts.dtd"><fontconfig><dir>/usr/share/fonts</dir><dir>/app/fonts</dir></fontconfig>' > /etc/fonts/fonts.conf; \
+	fi
+
+# Build font cache
+RUN fc-cache -f
+
 WORKDIR /app
 
 # copiar sólo archivos de lock/manifest para aprovechar cache
