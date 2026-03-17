@@ -1,9 +1,13 @@
 import bodyParser from "body-parser";
+import dotenv from "dotenv";
 import express from "express";
 import fs from "fs";
 import { marked } from "marked";
 import path from "path";
 import { fileURLToPath } from "url";
+
+// Cargar variables de entorno
+dotenv.config();
 
 // Try to set FONTCONFIG_PATH from common Homebrew/system locations before
 // loading the `canvas` native bindings which rely on fontconfig.
@@ -30,6 +34,33 @@ const { createCanvas, loadImage, registerFont } = await import("canvas");
 
 const app = express();
 app.use(bodyParser.json({ limit: "10mb" }));
+
+// Middleware de autenticación por API_SECRET
+const authenticateApiSecret = (req, res, next) => {
+  const apiSecret = process.env.API_SECRET;
+  const clientSecret = req.headers["x-api-secret"] || req.query.api_secret;
+
+  if (!apiSecret) {
+    return res
+      .status(500)
+      .json({ error: "API_SECRET no configurado en el servidor" });
+  }
+
+  if (!clientSecret) {
+    return res
+      .status(401)
+      .json({
+        error:
+          "API_SECRET requerido. Envía 'x-api-secret' en headers o 'api_secret' en query params",
+      });
+  }
+
+  if (clientSecret !== apiSecret) {
+    return res.status(403).json({ error: "API_SECRET inválido" });
+  }
+
+  next();
+};
 
 const WIDTH = 1080;
 const HEIGHT = 1350;
@@ -134,7 +165,7 @@ function drawMarkdown(ctx, markdown, startY, fontSize, lineHeight) {
   }
 }
 
-app.post("/generate-image", async (req, res) => {
+app.post("/generate-image", authenticateApiSecret, async (req, res) => {
   try {
     const {
       titleMarkdown,
